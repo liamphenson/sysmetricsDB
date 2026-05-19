@@ -28,7 +28,7 @@ namespace sysmetrics {
 	}
 
 	void MetricSeries::saveToFile(std::string_view directory) const {
-		std::string filepath = std::format("{}/{}.csv", directory, m_name);
+		std::string filepath{ std::format("{}/{}.csv", directory, m_name) };
 
 		std::ofstream outFile(filepath);
 
@@ -44,7 +44,7 @@ namespace sysmetrics {
 	}
 
 	void MetricSeries::loadFromFile(std::string_view directory) {
-		std::string filepath = std::format("{}/{}.csv", directory, m_name);
+		std::string filepath{ std::format("{}/{}.csv", directory, m_name) };
 		std::ifstream inFile(filepath);
 
 		if (!inFile.is_open()){
@@ -61,8 +61,8 @@ namespace sysmetrics {
 			std::string timeStr, valueStr;
 
 			if (std::getline(ss, timeStr, ',') && std::getline(ss, valueStr)){
-				auto epoch_ms = std::stoll(timeStr);
-				double val = std::stod(valueStr);
+				auto epoch_ms{ std::stoll(timeStr) };
+				double val{ std::stod(valueStr) };
 
 				std::chrono::milliseconds ms(epoch_ms);
 				DataPoint::TimePoint tp(ms);

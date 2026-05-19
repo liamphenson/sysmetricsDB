@@ -19,11 +19,11 @@ namespace sysmetrics::hw {
 		PDH_HCOUNTER m_cpuCounter;
 
 		nvmlDevice_t m_gpuDevice;
-		bool m_nvmlInitialized = false;
+		bool m_nvmlInitialized{ false };
 
 		std::vector<PDH_HCOUNTER> m_cpuCoreCounters;
 		int m_numLogicalCores;
-		int m_simulatedGpuSmCount = 64;
+		int m_simulatedGpuSmCount{ 64 };
 
 	public:
 		WindowsPoller() {
@@ -125,7 +125,7 @@ namespace sysmetrics::hw {
 
 		[[nodiscard]] std::vector<double> getGpuSmUtilizations() override {
 			std::vector<double> sms(m_simulatedGpuSmCount, 0.0);
-			double baseUtil = pollGPU();
+			double baseUtil{ pollGPU() };
 
 			for (int i{}; i < m_simulatedGpuSmCount; ++i) {
 				double noise = (rand() % 30) - 15.0;

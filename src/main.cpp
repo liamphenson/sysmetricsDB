@@ -23,17 +23,17 @@ int max(int a, int b) {
 int main() {
 	// Multithreaded implementation of the system metrics collection and analysis
 	sysmetrics::Database db;
-	constexpr std::string_view CPUMetricName = "CPU_Usage";
-	constexpr std::string_view RAMMetricName = "RAM_Usage";
-	constexpr std::string_view GPUMetricName = "GPU_Usage";
+	constexpr std::string_view CPUMetricName{ "CPU_Usage" };
+	constexpr std::string_view RAMMetricName{ "RAM_Usage" };
+	constexpr std::string_view GPUMetricName{ "GPU_Usage" };
 
 	db.createMetric(CPUMetricName);
 	db.createMetric(RAMMetricName);
 	db.createMetric(GPUMetricName);
 
-	auto* cpuMetric = db.getMetric(CPUMetricName);
-	auto* ramMetric = db.getMetric(RAMMetricName);
-	auto* gpuMetric = db.getMetric(GPUMetricName);
+	auto* cpuMetric{ db.getMetric(CPUMetricName) };
+	auto* ramMetric{ db.getMetric(RAMMetricName) };
+	auto* gpuMetric{ db.getMetric(GPUMetricName) };
 
 	if (!cpuMetric) {
 		std::cerr << std::format("Fatal Error: Metric '{}' could not be found or created.\n", CPUMetricName);
@@ -80,9 +80,9 @@ int main() {
 	ImGui::CreateContext();
 	ImPlot::CreateContext();
 
-	ImGuiIO& io = ImGui::GetIO();
+	ImGuiIO& io{ ImGui::GetIO() };
 	io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
-	ImFont* defaultFont = io.Fonts->AddFontFromFileTTF("assets/Inter_18pt-Black.ttf", 18.0f);
+	ImFont* defaultFont{ io.Fonts->AddFontFromFileTTF("assets/Inter_18pt-Black.ttf", 18.0f) };
 
 	if (defaultFont == nullptr) {
 		std::cerr << "Error: Failed to load font from 'assets/Inter_18pt-Black.ttf'. Please ensure the file exists and is a valid TTF font.\n";
@@ -92,7 +92,7 @@ int main() {
 	io.Fonts->Build();
 
 	ImGui::StyleColorsDark();
-	ImGuiStyle& style = ImGui::GetStyle();
+	ImGuiStyle& style{ ImGui::GetStyle() };
 
 	// Set style parameters
 	style.WindowRounding = 8.0f;
@@ -128,9 +128,9 @@ int main() {
 		ImGui::Text("System Monitor Agent v1.0");
 		ImGui::Separator();
 
-		auto CPUSnapshot = cpuMetric->getSnapshot();
-		auto RAMSnapshot = ramMetric->getSnapshot();
-		auto GPUSnapshot = gpuMetric->getSnapshot();
+		auto CPUSnapshot{ cpuMetric->getSnapshot() };
+		auto RAMSnapshot{ ramMetric->getSnapshot() };
+		auto GPUSnapshot{ gpuMetric->getSnapshot() };
 
 		std::vector<double> xValues;
 		std::vector<double> cpuValues, ramValues, gpuValues;
@@ -146,7 +146,7 @@ int main() {
 			if (ImPlot::BeginPlot("CPU Utilization")) {
 				ImPlot::SetupAxes(nullptr, "%");
 				ImPlot::SetupAxesLimits(max(static_cast<int>(xValues.size()) - 60, 0), static_cast<int>(xValues.size()), 0, 100, ImPlotCond_Always);
-				if(!xValues.empty()){
+				if (!xValues.empty()) {
 					ImPlotSpec spec;
 					spec.LineColor = ImVec4(0.2f, 0.6f, 1.0f, 1.0f);
 					spec.LineWeight = 2.0f;
