@@ -1,0 +1,13 @@
+{
+  "name": "sysmetricsdb",
+  "version": "1.0.0",
+  "dependencies": [
+    "cpp-httplib",
+    "glfw3",
+    "implot",
+    {
+      "name": "imgui",
+      "features": ["glfw-binding", "opengl3-binding"]
+    }
+  ]
+}
