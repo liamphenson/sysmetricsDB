@@ -52,6 +52,9 @@ int main() {
 
 	std::cout << "Initializing Hardware Abstraction Layer...\n";
 	std::unique_ptr<sysmetrics::hw::IHardwarePoller> hardwarePoller(sysmetrics::hw::createHardwarePoller());
+	std::mutex gridMutex;
+	std::vector<double> latestCpuCores;
+	std::vector<double> latestGpuSms;
 
 	std::cout << "Starting background hardware polling...\n";
 	std::thread backgroundCollector([&]() {
@@ -63,6 +66,14 @@ int main() {
 			cpuMetric->addDataPoint(CPULoad);
 			ramMetric->addDataPoint(RAMUsage);
 			gpuMetric->addDataPoint(GPULoad);
+
+			auto cpuGrid{ hardwarePoller->getCpuCoreUtilizations() };
+			auto gpuGrid{ hardwarePoller->getGpuSmUtilizations() };
+			{
+				std::lock_guard<std::mutex> lock(gridMutex);
+				latestCpuCores = cpuGrid;
+				latestGpuSms = gpuGrid;
+			}
 
 			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 		}
@@ -204,6 +215,44 @@ int main() {
 		if (!GPUSnapshot.empty()) {
 			ImGui::Text("Current GPU Load: %.1f%%", GPUSnapshot.back().value);
 		}
+
+		ImGui::Separator();
+		ImGui::Text("Architecture Load Distribution");
+
+		std::vector<double> uiCpuCores, uiGpuSms;
+		{
+			std::lock_guard<std::mutex> lock(gridMutex);
+			uiCpuCores = latestCpuCores;
+			uiGpuSms = latestGpuSms;
+		}
+
+		ImPlot::PushColormap(ImPlotColormap_Plasma);
+
+		if (!uiCpuCores.empty()) {
+			size_t cpuCols{ 8 };
+			size_t cpuRows{ (uiCpuCores.size() + cpuCols - 1) / cpuCols };
+			uiCpuCores.resize(cpuRows * cpuCols, 0.0); // Pad with zeros if necessary
+
+			if(ImPlot::BeginPlot("Cpu Cores", ImVec2(-1, 150))){
+				ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoDecorations, ImPlotAxisFlags_NoDecorations);
+				ImPlot::PlotHeatmap("##cpu", uiCpuCores.data(), static_cast<int>(cpuRows), static_cast<int>(cpuCols), 0.0, 100.0, "%.0f%%");
+				ImPlot::EndPlot();
+			}
+		}
+
+		if (!uiGpuSms.empty()) {
+			size_t gpuCols{ 16 };
+			size_t gpuRows{ (uiGpuSms.size() + gpuCols - 1) / gpuCols };
+			uiGpuSms.resize(gpuRows * gpuCols, 0.0);
+
+			if (ImPlot::BeginPlot("Gpu Streaming Multiprocessors", ImVec2(-1, 150))) {
+				ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoDecorations, ImPlotAxisFlags_NoDecorations);
+				ImPlot::PlotHeatmap("##gpu", uiGpuSms.data(), static_cast<int>(gpuRows), static_cast<int>(gpuCols), 0.0, 100.0, "%.0f%%");
+				ImPlot::EndPlot();
+			}
+		}
+
+		ImPlot::PopColormap();
 
 		ImGui::End();
 
