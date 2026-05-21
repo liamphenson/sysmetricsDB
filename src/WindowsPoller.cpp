@@ -51,8 +51,6 @@ namespace sysmetrics::hw {
 				throw std::runtime_error("Failed to add PDH counter.");
 			}
 
-			PdhCollectQueryData(m_query);
-
 			if (nvmlInit() == NVML_SUCCESS) {
 				if (nvmlDeviceGetHandleByIndex(0, &m_gpuDevice) == NVML_SUCCESS) {
 					m_nvmlInitialized = true;
@@ -63,7 +61,7 @@ namespace sysmetrics::hw {
 			m_cpuCoreCounters.resize(m_numLogicalCores);
 
 			for (int i{}; i < m_numLogicalCores; ++i) {
-				std::string counterPath = std::format("\\Processor Information({})\\% Processor Time", i);
+				std::string counterPath{ std::format("\\Processor({})\\% Processor Time", i) };
 				if (PdhAddEnglishCounter(m_query, counterPath.c_str(), 0, &m_cpuCoreCounters[i]) != ERROR_SUCCESS) {
 					throw std::runtime_error(std::format("Failed to add PDH counter for CPU core {}", i));
 				}
@@ -71,6 +69,8 @@ namespace sysmetrics::hw {
 
 			PdhAddEnglishCounterA(m_query, "\\PhysicalDisk(_Total)\\Disk Read Bytes/sec", 0, &m_diskReadCounter);
 			PdhAddEnglishCounterA(m_query, "\\PhysicalDisk(_Total)\\Disk Write Bytes/sec", 0, &m_diskWriteCounter);
+			
+			PdhCollectQueryData(m_query);
 		}
 
 		~WindowsPoller() override {

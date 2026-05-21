@@ -123,7 +123,7 @@ int main() {
 	if (!window) return 1;
 
 	glfwMakeContextCurrent(window);
-	glfwSwapInterval(1); // Enable vsync
+	glfwSwapInterval(0);
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
