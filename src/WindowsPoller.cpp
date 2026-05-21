@@ -1,6 +1,16 @@
 #ifdef _WIN32
-#include "HardwarePoller.hpp"
+
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
+#include <winsock2.h>
+#include <ws2ipdef.h>
 #include <windows.h>
+#include <iphlpapi.h>
+#include <netioapi.h>
+
+#include "HardwarePoller.hpp"
 #include <pdh.h>
 #include <nvml.h>
 #include <stdexcept>
@@ -17,6 +27,12 @@ namespace sysmetrics::hw {
 	private:
 		PDH_HQUERY m_query;
 		PDH_HCOUNTER m_cpuCounter;
+		PDH_HCOUNTER m_diskReadCounter;
+		PDH_HCOUNTER m_diskWriteCounter;
+
+		ULONG64 m_prevNetworkRx{ 0 };
+		ULONG64 m_prevNetworkTx{ 0 };
+		bool m_networkInitialized{ false };
 
 		nvmlDevice_t m_gpuDevice;
 		bool m_nvmlInitialized{ false };
@@ -52,6 +68,9 @@ namespace sysmetrics::hw {
 					throw std::runtime_error(std::format("Failed to add PDH counter for CPU core {}", i));
 				}
 			}
+
+			PdhAddEnglishCounterA(m_query, "\\PhysicalDisk(_Total)\\Disk Read Bytes/sec", 0, &m_diskReadCounter);
+			PdhAddEnglishCounterA(m_query, "\\PhysicalDisk(_Total)\\Disk Write Bytes/sec", 0, &m_diskWriteCounter);
 		}
 
 		~WindowsPoller() override {
@@ -90,14 +109,52 @@ namespace sysmetrics::hw {
 			return 0.0;
 		}
 
-		[[nodiscard]] double pollDisk() override {
-			// Placeholder implementation
-			return 0.0;
+		[[nodiscard]] std::pair<double, double> pollDisk() override {
+			PDH_FMT_COUNTERVALUE readVal, writeVal;
+			double readBps{ 0.0 }, writeBps{ 0.0 };
+
+			if(PdhGetFormattedCounterValue(m_diskReadCounter, PDH_FMT_DOUBLE, nullptr, &readVal) == ERROR_SUCCESS) {
+				readBps = readVal.doubleValue;
+			}
+			if (PdhGetFormattedCounterValue(m_diskWriteCounter, PDH_FMT_DOUBLE, nullptr, &writeVal) == ERROR_SUCCESS) {
+				writeBps = writeVal.doubleValue;
+			}
+
+			return { readBps, writeBps };
 		}
 
-		[[nodiscard]] double pollNetwork() override {
-			// Placeholder implementation
-			return 0.0;
+		[[nodiscard]] std::pair<double, double> pollNetwork() override {
+			PMIB_IF_TABLE2 ifTable;
+
+			if (GetIfTable2(&ifTable) != NO_ERROR) {
+				return { 0.0, 0.0 };
+			}
+
+			ULONG64 currentRx{ 0 }, currentTx{ 0 };
+
+			for (ULONG64 i{}; i < ifTable->NumEntries; i++) {
+				if (ifTable->Table[i].Type != IF_TYPE_SOFTWARE_LOOPBACK) {
+					currentRx += ifTable->Table[i].InOctets;
+					currentTx += ifTable->Table[i].OutOctets;
+				}
+			}
+
+			FreeMibTable(ifTable);
+
+			if (!m_networkInitialized) {
+				m_prevNetworkRx = currentRx;
+				m_prevNetworkTx = currentTx;
+				m_networkInitialized = true;
+				return { 0.0, 0.0 };
+			}
+
+			double rxDelta = static_cast<double>(currentRx - m_prevNetworkRx);
+			double txDelta = static_cast<double>(currentTx - m_prevNetworkTx);
+
+			m_prevNetworkRx = currentRx;
+			m_prevNetworkTx = currentTx;
+
+			return { rxDelta, txDelta };
 		}
 
 		[[nodiscard]] double pollGPU() override {

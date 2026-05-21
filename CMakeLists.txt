@@ -58,3 +58,7 @@ if(MSVC)
 else()
     target_compile_options(SysMetricsDB PRIVATE -Wall -Wextra -Werror)
 endif()
+
+if(WIN32)
+    target_link_libraries(SysMetricsDB PRIVATE iphlpapi ws2_32)
+endif()
