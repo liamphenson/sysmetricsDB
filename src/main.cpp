@@ -131,6 +131,8 @@ int main() {
 
 	ImGuiIO& io{ ImGui::GetIO() };
 	io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 	ImFont* defaultFont{ io.Fonts->AddFontFromFileTTF("assets/Inter_18pt-Black.ttf", 18.0f) };
 
 	if (defaultFont == nullptr) {
@@ -172,6 +174,7 @@ int main() {
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
+		ImGui::DockSpaceOverViewport();
 
 		ImGui::Begin("Hardware Telemetry Dashboard");
 		ImGui::Text("System Monitor Agent v1.0");
@@ -188,7 +191,7 @@ int main() {
 		std::vector<double> xValues;
 		std::vector<double> cpuValues, ramValues, gpuValues, diskReadValues, diskWriteValues, networkRxValues, networkTxValues;
 
-		for (size_t i = 0; i < CPUSnapshot.size(); ++i) {
+		for (size_t i{}; i < CPUSnapshot.size(); ++i) {
 			xValues.push_back(static_cast<double>(i));
 			cpuValues.push_back(CPUSnapshot[i].value);
 			ramValues.push_back(i < RAMSnapshot.size() ? RAMSnapshot[i].value : 0.0);
@@ -373,6 +376,13 @@ int main() {
 
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		glfwSwapBuffers(window);
+
+		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+			GLFWwindow* backup_current_context = glfwGetCurrentContext();
+			ImGui::UpdatePlatformWindows();
+			ImGui::RenderPlatformWindowsDefault();
+			glfwMakeContextCurrent(backup_current_context);
+		}
 	}
 
 	ImGui_ImplOpenGL3_Shutdown();

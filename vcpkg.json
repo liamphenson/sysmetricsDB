@@ -7,7 +7,7 @@
     "implot",
     {
       "name": "imgui",
-      "features": ["glfw-binding", "opengl3-binding"]
+      "features": ["glfw-binding", "opengl3-binding", "docking-experimental"]
     }
   ]
 }
